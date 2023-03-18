@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GitHub API Demo with React</title>
+    <script src="https://unpkg.com/react@17.0.2/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17.0.2/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+    <style>
+        .container {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // RepositoryList component
+        function RepositoryList(props) {
+            const owner = props.owner;
+            const repositories = props.repositories;
+            const handleClick = props.onClick;
+            const listItems = repositories.map((repository) =>
+                <li key={repository.name}>
+                    <button onClick={() => handleClick(owner, repository.name)}>{repository.name}</button>
+                </li>
+            );
+            return (
+                <div>
+                    <h2> {owner} repositories</h2>
+                    <ul>
+                        {listItems}
+                    </ul>
+                </div>
+            );
+        }
+
+        // CommitHistory component
+        function CommitHistory(props) {
+            const commits = props.commits;
+            const listItems = commits.map((commit) =>
+                <li key={commit.sha}>
+                    <p><strong>{commit.commit.author.name}</strong> committed on {commit.commit.author.date} with message:</p>
+                    <p>{commit.commit.message}</p>
+                </li>
+            );
+            return (
+                <div>
+                    <h2> commit History</h2>
+                    <ul>
+                        {listItems}
+                    </ul>
+                </div>
+            );
+        }
+
+        // App component
+        class App extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {
+                    owner: "",
+                    repositories: [],
+                    commits: []
+                };
+                this.handleOwnerChange = this.handleOwnerChange.bind(this);
+                this.handleGetRepositories = this.handleGetRepositories.bind(this);
+                this.handleRepositoryClick = this.handleRepositoryClick.bind(this);
+            }
+
+            handleOwnerChange(event) {
+                this.setState({owner: event.target.value});
+            }
+
+            handleGetRepositories() {
+                const owner = this.state.owner;
+                fetch(`https://api.github.com/users/${owner}/repos`)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.setState({repositories: data});
+                    })
+                    .catch(error => console.error(error));
+            }
+
+            handleRepositoryClick(owner, repoName) {
+                fetch(`https://api.github.com/repos/${owner}/${repoName}/commits`)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.setState({commits: data});
+                    })
+                    .catch(error => console.error(error));
+            }
+
+            render() {
+                return (
+                    <div>
+                        <img src="https://res.cloudinary.com/dpj0p14lm/image/upload/v1679106896/moneyforpixels_ttt0as.png" width="300px" height="300px"
+                        title="DESIGN COSTS $$"/>
+                        <form>
+                            <label>
+                                Enter the repository owner's name:
+                                <input type="text" value={this.state.owner} onChange={this.handleOwnerChange} />
+                            </label>
+                            <button type="button" onClick={this.handleGetRepositories}>Get Repositories</button>
+                        </form>
+                        <div className ="container">
+                            <RepositoryList owner={this.state.owner} repositories={this.state.repositories} onClick={this.handleRepositoryClick} />
+                            <CommitHistory commits={this.state.commits} />
+                        </div>
+                    </div>
+                );
+            }
+        }
+
+        // Render the app
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
